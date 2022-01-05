@@ -48,7 +48,6 @@ func init() {
 
 type Game struct {
 	mode   int
-	dir    int
 	player *player.Player
 }
 
