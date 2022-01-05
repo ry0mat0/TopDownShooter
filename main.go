@@ -72,8 +72,7 @@ func (g *Game) Update() error {
 			fmt.Println("mode Changed")
 		}
 	case modeGame:
-		g.dir = g.directionKey()
-		g.player.Move(g.dir, screenX, screenY)
+		g.player.Move(g.moveKey(), screenX, screenY)
 	case modeGameover:
 	}
 
@@ -118,18 +117,14 @@ func (g *Game) isKeyJustPressed() bool {
 	return false
 }
 
-func (g *Game) directionKey() int {
-	if ebiten.IsKeyPressed(ebiten.KeyW) {
-		return 1
-	} else if ebiten.IsKeyPressed(ebiten.KeyA) {
-		return 2
-	} else if ebiten.IsKeyPressed(ebiten.KeyS) {
-		return 3
-	} else if ebiten.IsKeyPressed(ebiten.KeyD) {
-		return 4
-	} else {
-		return 0
+func (g *Game) moveKey() (keys [4]bool) {
+	keys = [4]bool{
+		ebiten.IsKeyPressed(ebiten.KeyW),
+		ebiten.IsKeyPressed(ebiten.KeyA),
+		ebiten.IsKeyPressed(ebiten.KeyS),
+		ebiten.IsKeyPressed(ebiten.KeyD),
 	}
+	return
 }
 
 func main() {

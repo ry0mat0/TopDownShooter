@@ -14,7 +14,7 @@ type Player struct {
 	speed     float64 // speed of player
 	accel     float64 // accel magnitude of player
 	brake     float64 // brake magnitude of player
-  rot_speed float64 // rotation speed of player
+	rot_speed float64 // rotation speed of player
 }
 
 //Initialise player parameters
@@ -31,44 +31,47 @@ func (p *Player) NewPlayer(px, py, sx, sy int, speed, accel, brake, rot_speed fl
 	fmt.Printf("p.thetaP is %f\n", p.thetaP)
 }
 
-func (p *Player) Move(dir, sx, sy int) {
-	p.rotateCenter(dir)
-	p.translate(dir, sx, sy)
+func (p *Player) Move(keys [4]bool, sx, sy int) {
+	p.rotateCenter(keys)
+	p.translate(keys, sx, sy)
 }
 
-func (p *Player) translate(dir, sx, sy int) {
-	switch dir {
-	case 1: //KeyW
-		p.Y = p.Y - p.accel*p.speed*math.Cos(p.Direction)
-		p.X = p.X + p.accel*p.speed*math.Sin(p.Direction)
-	// case 2: //KeyA
-	case 3: //KeyS
-		p.Y = p.Y - p.brake*p.speed*math.Cos(p.Direction)
-		p.X = p.X + p.brake*p.speed*math.Sin(p.Direction)
-	// case 4: //KeyD
-	default:
-		p.Y = p.Y - p.speed*math.Cos(p.Direction)
-		p.X = p.X + p.speed*math.Sin(p.Direction)
+func (p *Player) translate(keys [4]bool, sx, sy int) {
+	var m float64
+	if keys[0] == true {
+		m = p.accel
+	} else if keys[2] == true {
+		m = p.brake
+	} else {
+		m = 1.0
 	}
+	// switch dir {
+	// case 1: //KeyW
+	// 	m = p.accel
+	// case 3: //KeyS
+	// 	m = p.brake
+	// default:
+	// 	m = 1.0
+	// }
+	p.Y = p.Y - m*p.speed*math.Cos(p.Direction)
+	p.X = p.X + m*p.speed*math.Sin(p.Direction)
 	p.checkScreenEdge(sx, sy)
 }
 
 // Update angle for rotation
-func (p *Player) rotate(dir int) {
-	switch dir {
-	// case 1: //KeyW
-	case 2: //KeyA
+func (p *Player) rotate(keys [4]bool) {
+	if keys[1] { //KeyA
 		p.Direction = p.Direction - p.rot_speed
-	// case 3: //KeyS
-	case 4: //KeyD
+	}
+	if keys[3] { //KeyD
 		p.Direction = p.Direction + p.rot_speed
 	}
 }
 
 // Rotate plater around the center of img
-func (p *Player) rotateCenter(dir int) {
+func (p *Player) rotateCenter(keys [4]bool) {
 	xc1, yc1 := p.getCenter()
-	p.rotate(dir)
+	p.rotate(keys)
 	xc2, yc2 := p.getCenter()
 	p.X = p.X + (xc1 - xc2)
 	p.Y = p.Y + (yc1 - yc2)
