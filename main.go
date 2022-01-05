@@ -34,6 +34,7 @@ const (
 	rotSpeed    = 0.02
 	playerSizeX = 100
 	playerSizeY = 100
+  playerScale = 0.5
 )
 
 var gop_img *ebiten.Image
@@ -60,7 +61,7 @@ func NewGame() *Game {
 
 func (g *Game) init() {
 	g.player = &player.Player{}
-	g.player.NewPlayer(playerSizeX, playerSizeY, screenX, screenY, speed, accel, brake, rotSpeed)
+	g.player.NewPlayer(playerSizeX, playerSizeY, screenX/playerScale, screenY/playerScale, speed, accel, brake, rotSpeed)
 }
 
 func (g *Game) Update() error {
@@ -71,7 +72,7 @@ func (g *Game) Update() error {
 			fmt.Println("mode Changed")
 		}
 	case modeGame:
-		g.player.Move(g.moveKey(), screenX, screenY)
+		g.player.Move(g.moveKey(), screenX/playerScale, screenY/playerScale)
 	case modeGameover:
 	}
 
@@ -95,7 +96,7 @@ func (g *Game) DrawPlayer(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Rotate(g.player.Direction)
 	op.GeoM.Translate(g.player.X, g.player.Y)
-	op.GeoM.Scale(1.0, 1.0)
+	op.GeoM.Scale(playerScale, playerScale)
 	s := strconv.FormatFloat(g.player.X, 'f', 1, 64)
 	t := strconv.FormatFloat(g.player.Y, 'f', 1, 64)
 	u := strconv.FormatFloat(g.player.Direction*180.0/pi, 'f', 1, 64)
