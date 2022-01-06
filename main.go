@@ -13,8 +13,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
-	// "golang.org/x/exp/shiny/screen"
 	"TopDownShooter/bullet"
+	// "TopDownShooter/controll"
 	"TopDownShooter/player"
 )
 
@@ -29,7 +29,7 @@ const (
 	modeGameover = 2
 
 	//player
-	speed       = 1.0
+	speed       = 2.0
 	accel       = 3.0
 	brake       = 0.5
 	rotSpeed    = 0.02
@@ -71,7 +71,9 @@ func NewGame() *Game {
 func (g *Game) init() {
 	g.player = &player.Player{}
 	g.player.NewPlayer(playerSizeX, playerSizeY, screenX, screenY, speed, accel, brake, rotSpeed)
-	g.bullets[0] = &bullet.Bullet{}
+	for i := 0; i < maxBulletCount; i++ {
+		g.bullets[i] = &bullet.Bullet{}
+	}
 }
 
 func (g *Game) Update() error {
@@ -83,9 +85,14 @@ func (g *Game) Update() error {
 		}
 	case modeGame:
 		g.player.Move(g.moveKey(), screenX, screenY)
-		g.bullets[0].Move()
+		for i := 0; i < maxBulletCount; i++ {
+			g.bullets[i].Move(screenX, screenY)
+		}
 		if g.isKeyJustPressed() {
-			g.bullets[0].NewBullet(g.player.X, g.player.Y, g.player.Direction, bulletSpeed)
+			i := checkEmptyBullet(g.bullets)
+			if i >= 0 {
+				g.bullets[i].NewBullet(g.player.X, g.player.Y, g.player.Direction, bulletSpeed)
+			}
 		}
 	case modeGameover:
 	}
@@ -121,13 +128,14 @@ func (g *Game) DrawPlayer(screen *ebiten.Image) {
 }
 
 func (g *Game) DrawBullets(screen *ebiten.Image) {
-	i := 0
-	if g.bullets[i].Visible {
-		ebitenutil.DebugPrintAt(screen, "bullet[i] is visible", 0, 60)
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Rotate(g.bullets[i].Direction)
-		op.GeoM.Translate(g.bullets[i].X, g.bullets[i].Y)
-		screen.DrawImage(bulletImg, op)
+	for i := 0; i < maxBulletCount; i++ {
+		if g.bullets[i].Visible {
+			ebitenutil.DebugPrintAt(screen, "bullet is visible", 0, 60+i*15)
+			op := &ebiten.DrawImageOptions{}
+			op.GeoM.Rotate(g.bullets[i].Direction)
+			op.GeoM.Translate(g.bullets[i].X, g.bullets[i].Y)
+			screen.DrawImage(bulletImg, op)
+		}
 	}
 }
 
@@ -150,6 +158,15 @@ func (g *Game) moveKey() (keys [4]bool) {
 		ebiten.IsKeyPressed(ebiten.KeyD),
 	}
 	return
+}
+
+func checkEmptyBullet(bullets [maxBulletCount]*bullet.Bullet) int {
+	for i := 0; i < maxBulletCount; i++ {
+		if !bullets[i].Visible {
+			return i
+		}
+	}
+	return -1
 }
 
 func main() {
