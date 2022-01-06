@@ -1,7 +1,7 @@
 package bullet
 
 import (
-  "math"
+	"math"
 )
 
 type Bullet struct {
@@ -19,11 +19,27 @@ func (b *Bullet) NewBullet(px, py, pd, bs float64) {
 	b.Y = py
 	b.Direction = pd
 	b.speed = bs
-  b.Visible = true
+	b.Visible = true
 }
 
-func (b *Bullet) Move(){
-  b.X = b.X + b.speed*math.Sin(b.Direction)
-  b.Y = b.Y - b.speed*math.Cos(b.Direction)
+func (b *Bullet) Move(sx, sy int) {
+	b.X = b.X + b.speed*math.Sin(b.Direction)
+	b.Y = b.Y - b.speed*math.Cos(b.Direction)
+	b.checkScreenEdge(sx, sy)
 }
 
+// Detect edge of screen and set Non-Visible
+func (b *Bullet) checkScreenEdge(sx, sy int) {
+	if b.X < 0 {
+		b.Visible = false
+	}
+	if b.X > float64(sx) {
+		b.Visible = false
+	}
+	if b.Y < 0 {
+		b.Visible = false
+	}
+	if b.Y > float64(sy) {
+		b.Visible = false
+	}
+}
