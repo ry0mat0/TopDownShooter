@@ -14,7 +14,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
 	// "golang.org/x/exp/shiny/screen"
-	"ebiten_hello/player"
+	"TopDownShooter/bullet"
+	"TopDownShooter/player"
 )
 
 const (
@@ -32,24 +33,32 @@ const (
 	accel       = 3.0
 	brake       = 0.5
 	rotSpeed    = 0.02
-	playerSizeX = 100
-	playerSizeY = 100
-  playerScale = 0.5
+	playerSizeX = 50
+	playerSizeY = 50
+
+	//bullets
+	maxBulletCount = 10
+	bulletSizeX    = 2
+	bulletSizeY    = 10
+	bulletSpeed    = 5.0
 )
 
-var gop_img *ebiten.Image
+var playerImg *ebiten.Image
+var bulletImg *ebiten.Image
 
 func init() {
 	var err error
-	gop_img, _, err = ebitenutil.NewImageFromFile("image/plane.png")
+	playerImg, _, err = ebitenutil.NewImageFromFile("image/plane.png")
+	bulletImg, _, err = ebitenutil.NewImageFromFile("image/bullet.png")
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 type Game struct {
-	mode   int
-	player *player.Player
+	mode    int
+	player  *player.Player
+	bullets [maxBulletCount]*bullet.Bullet
 }
 
 // NewGame method
@@ -61,7 +70,8 @@ func NewGame() *Game {
 
 func (g *Game) init() {
 	g.player = &player.Player{}
-	g.player.NewPlayer(playerSizeX, playerSizeY, screenX/playerScale, screenY/playerScale, speed, accel, brake, rotSpeed)
+	g.player.NewPlayer(playerSizeX, playerSizeY, screenX, screenY, speed, accel, brake, rotSpeed)
+	g.bullets[0] = &bullet.Bullet{}
 }
 
 func (g *Game) Update() error {
@@ -72,7 +82,11 @@ func (g *Game) Update() error {
 			fmt.Println("mode Changed")
 		}
 	case modeGame:
-		g.player.Move(g.moveKey(), screenX/playerScale, screenY/playerScale)
+		g.player.Move(g.moveKey(), screenX, screenY)
+		g.bullets[0].Move()
+		if g.isKeyJustPressed() {
+			g.bullets[0].NewBullet(g.player.X, g.player.Y, g.player.Direction, bulletSpeed)
+		}
 	case modeGameover:
 	}
 
@@ -87,6 +101,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	case modeGame:
 		ebitenutil.DebugPrint(screen, "Game")
 		g.DrawPlayer(screen)
+		g.DrawBullets(screen)
 	case modeGameover:
 		ebitenutil.DebugPrint(screen, "GameOver")
 	}
@@ -96,14 +111,24 @@ func (g *Game) DrawPlayer(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Rotate(g.player.Direction)
 	op.GeoM.Translate(g.player.X, g.player.Y)
-	op.GeoM.Scale(playerScale, playerScale)
 	s := strconv.FormatFloat(g.player.X, 'f', 1, 64)
 	t := strconv.FormatFloat(g.player.Y, 'f', 1, 64)
 	u := strconv.FormatFloat(g.player.Direction*180.0/pi, 'f', 1, 64)
 	ebitenutil.DebugPrintAt(screen, strings.Join([]string{"X is ", s}, ""), 0, 15)
 	ebitenutil.DebugPrintAt(screen, strings.Join([]string{"Y is ", t}, ""), 0, 30)
 	ebitenutil.DebugPrintAt(screen, strings.Join([]string{"D is ", u}, ""), 0, 45)
-	screen.DrawImage(gop_img, op)
+	screen.DrawImage(playerImg, op)
+}
+
+func (g *Game) DrawBullets(screen *ebiten.Image) {
+	i := 0
+	if g.bullets[i].Visible {
+		ebitenutil.DebugPrintAt(screen, "bullet[i] is visible", 0, 60)
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Rotate(g.bullets[i].Direction)
+		op.GeoM.Translate(g.bullets[i].X, g.bullets[i].Y)
+		screen.DrawImage(bulletImg, op)
+	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

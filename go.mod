@@ -1,4 +1,4 @@
-module ebiten_hello
+module TopDownShooter
 
 go 1.17
 
