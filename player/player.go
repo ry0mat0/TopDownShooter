@@ -1,24 +1,29 @@
 package player
 
 import (
-	"fmt"
+	// "fmt"
 	"math"
 )
 
 type Player struct {
+	// Size
 	X         float64 // X posiiton of player
 	Y         float64 // Y position of player
 	Direction float64 // Direction of player
 	r         float64 // Distance between center and lefttop of img
 	thetaP    float64 // Angle of vector between center and lefttop of img
+	// Mobility
 	speed     float64 // speed of player
 	accel     float64 // accel magnitude of player
 	brake     float64 // brake magnitude of player
 	rot_speed float64 // rotation speed of player
+	// Weapon
+	Gun_interval int
 }
 
 //Initialise player parameters
-func (p *Player) NewPlayer(px, py, sx, sy int, speed, accel, brake, rot_speed float64) {
+func (p *Player) NewPlayer(px, py, sx, sy int,
+	speed, accel, brake, rot_speed float64, interval int) {
 	p.X = float64(sx)/2 - float64(px)/2
 	p.Y = float64(sy)/2 - float64(py)/2
 	p.r = math.Sqrt(float64(px)*float64(px)+float64(py)*float64(py)) / 2.0
@@ -27,8 +32,7 @@ func (p *Player) NewPlayer(px, py, sx, sy int, speed, accel, brake, rot_speed fl
 	p.accel = accel
 	p.brake = brake
 	p.rot_speed = rot_speed
-	fmt.Printf("p.r is %f\n", p.r)
-	fmt.Printf("p.thetaP is %f\n", p.thetaP)
+  p.Gun_interval = interval
 }
 
 func (p *Player) Move(keys [4]bool, sx, sy int) {
@@ -98,4 +102,8 @@ func (p *Player) getCenter() (xc, yc float64) {
 	xc = p.X + p.r*math.Cos(p.Direction+p.thetaP)
 	yc = p.X + p.r*math.Sin(p.Direction+p.thetaP)
 	return
+}
+
+func (p *Player) CountdownInterval() {
+  p.Gun_interval = p.Gun_interval - 1
 }

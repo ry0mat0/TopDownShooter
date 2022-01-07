@@ -37,10 +37,11 @@ const (
 	playerSizeY = 50
 
 	//bullets
-	maxBulletCount = 10
+	maxBulletCount = 20
 	bulletSizeX    = 2
 	bulletSizeY    = 10
 	bulletSpeed    = 5.0
+	interval       = 10
 )
 
 var playerImg *ebiten.Image
@@ -70,7 +71,8 @@ func NewGame() *Game {
 
 func (g *Game) init() {
 	g.player = &player.Player{}
-	g.player.NewPlayer(playerSizeX, playerSizeY, screenX, screenY, speed, accel, brake, rotSpeed)
+	g.player.NewPlayer(playerSizeX, playerSizeY, screenX, screenY,
+		speed, accel, brake, rotSpeed, interval)
 	for i := 0; i < maxBulletCount; i++ {
 		g.bullets[i] = &bullet.Bullet{}
 	}
@@ -88,10 +90,15 @@ func (g *Game) Update() error {
 		for i := 0; i < maxBulletCount; i++ {
 			g.bullets[i].Move(screenX, screenY)
 		}
-		if g.isKeyJustPressed() {
-			i := checkEmptyBullet(g.bullets)
-			if i >= 0 {
-				g.bullets[i].NewBullet(g.player.X, g.player.Y, g.player.Direction, bulletSpeed)
+		if g.isKeyPressed() {
+			if g.player.Gun_interval == 0 {
+				i := checkEmptyBullet(g.bullets)
+				if i >= 0 {
+					g.bullets[i].NewBullet(g.player.X, g.player.Y, g.player.Direction, bulletSpeed)
+					g.player.Gun_interval = interval
+				}
+			} else {
+				g.player.CountdownInterval()
 			}
 		}
 	case modeGameover:
@@ -130,7 +137,8 @@ func (g *Game) DrawPlayer(screen *ebiten.Image) {
 func (g *Game) DrawBullets(screen *ebiten.Image) {
 	for i := 0; i < maxBulletCount; i++ {
 		if g.bullets[i].Visible {
-			ebitenutil.DebugPrintAt(screen, "bullet is visible", 0, 60+i*15)
+			str := strings.Join([]string{"bullet", strconv.FormatInt(int64(i), 10), "is visible"}, "")
+			ebitenutil.DebugPrintAt(screen, str, 0, 60+i*15)
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Rotate(g.bullets[i].Direction)
 			op.GeoM.Translate(g.bullets[i].X, g.bullets[i].Y)
@@ -141,6 +149,13 @@ func (g *Game) DrawBullets(screen *ebiten.Image) {
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return screenX, screenY
+}
+
+func (g *Game) isKeyPressed() bool {
+	if ebiten.IsKeyPressed(ebiten.KeySpace) {
+		return true
+	}
+	return false
 }
 
 func (g *Game) isKeyJustPressed() bool {
