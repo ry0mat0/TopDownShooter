@@ -11,17 +11,22 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/text"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
 
 	"TopDownShooter/bullet"
 	// "TopDownShooter/controll"
-	"TopDownShooter/player"
+	"TopDownShooter/plane"
 )
 
 const (
-	pi      = math.Pi
-	screenX = 640
-	screenY = 480
+	pi       = math.Pi
+	screenX  = 800
+	screenY  = 600
+	fontSize = 10
 
 	// game modes
 	modeTitle    = 0
@@ -29,10 +34,10 @@ const (
 	modeGameover = 2
 
 	//player
-	speed       = 2.0
-	accel       = 3.0
+	speed       = 2.5
+	accel       = 2.0
 	brake       = 0.5
-	rotSpeed    = 0.02
+	rotSpeed    = 0.03
 	playerSizeX = 50
 	playerSizeY = 50
 
@@ -40,26 +45,48 @@ const (
 	maxBulletCount = 20
 	bulletSizeX    = 2
 	bulletSizeY    = 10
-	bulletSpeed    = 5.0
+	bulletSpeed    = 8.0
 	interval       = 10
 )
 
-var playerImg *ebiten.Image
-var bulletImg *ebiten.Image
+var (
+	playerImg  *ebiten.Image
+	enemyImg   *ebiten.Image
+	bulletImg  *ebiten.Image
+	arcadeFont font.Face
+)
 
 func init() {
 	var err error
 	playerImg, _, err = ebitenutil.NewImageFromFile("image/plane.png")
+	if err != nil {
+		log.Fatal(err)
+	}
 	bulletImg, _, err = ebitenutil.NewImageFromFile("image/bullet.png")
 	if err != nil {
 		log.Fatal(err)
 	}
+	enemyImg, _, err = ebitenutil.NewImageFromFile("image/enemy.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	tt, err := opentype.Parse(fonts.PressStart2P_ttf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	const dpi = 72
+	arcadeFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    fontSize,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
 }
 
 type Game struct {
 	mode    int
-	player  *player.Player
+	plane  *plane.Plane
 	bullets [maxBulletCount]*bullet.Bullet
+	enemy   *plane.Plane
 }
 
 // NewGame method
@@ -70,8 +97,11 @@ func NewGame() *Game {
 }
 
 func (g *Game) init() {
-	g.player = &player.Player{}
-	g.player.NewPlayer(playerSizeX, playerSizeY, screenX, screenY,
+	g.plane = &plane.Plane{}
+	g.plane.NewPlayer(playerSizeX, playerSizeY, screenX, screenY,
+		speed, accel, brake, rotSpeed, interval)
+	g.enemy = &plane.Plane{}
+	g.enemy.NewPlayer(playerSizeX, playerSizeY, screenX, screenY,
 		speed, accel, brake, rotSpeed, interval)
 	for i := 0; i < maxBulletCount; i++ {
 		g.bullets[i] = &bullet.Bullet{}
@@ -86,19 +116,20 @@ func (g *Game) Update() error {
 			fmt.Println("mode Changed")
 		}
 	case modeGame:
-		g.player.Move(g.moveKey(), screenX, screenY)
+    g.plane.MovePlayer(g.moveKey(), screenX, screenY)
+    g.enemy.MoveEnemy(screenX, screenY)
 		for i := 0; i < maxBulletCount; i++ {
 			g.bullets[i].Move(screenX, screenY)
 		}
 		if g.isKeyPressed() {
-			if g.player.Gun_interval == 0 {
+			if g.plane.Gun_interval == 0 {
 				i := checkEmptyBullet(g.bullets)
 				if i >= 0 {
-					g.bullets[i].NewBullet(g.player.X, g.player.Y, g.player.Direction, bulletSpeed)
-					g.player.Gun_interval = interval
+					g.bullets[i].NewBullet(g.plane.X, g.plane.Y, g.plane.Direction, bulletSpeed)
+					g.plane.Gun_interval = interval
 				}
 			} else {
-				g.player.CountdownInterval()
+				g.plane.CountdownInterval()
 			}
 		}
 	case modeGameover:
@@ -111,23 +142,23 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0, 0, 0xff, 0xff})
 	switch g.mode {
 	case modeTitle:
-		ebitenutil.DebugPrint(screen, "Title")
+		text.Draw(screen, "PRESS SPACE KEY", arcadeFont, 245, 240, color.Black)
 	case modeGame:
-		ebitenutil.DebugPrint(screen, "Game")
+		g.DrawUI(screen)
 		g.DrawPlayer(screen)
-		g.DrawBullets(screen)
+    g.DrawBullets(screen)
+    g.DrawEnemy(screen)
 	case modeGameover:
-		ebitenutil.DebugPrint(screen, "GameOver")
 	}
 }
 
 func (g *Game) DrawPlayer(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Rotate(g.player.Direction)
-	op.GeoM.Translate(g.player.X, g.player.Y)
-	s := strconv.FormatFloat(g.player.X, 'f', 1, 64)
-	t := strconv.FormatFloat(g.player.Y, 'f', 1, 64)
-	u := strconv.FormatFloat(g.player.Direction*180.0/pi, 'f', 1, 64)
+	op.GeoM.Rotate(g.plane.Direction)
+	op.GeoM.Translate(g.plane.X, g.plane.Y)
+	s := strconv.FormatFloat(g.plane.X, 'f', 1, 64)
+	t := strconv.FormatFloat(g.plane.Y, 'f', 1, 64)
+	u := strconv.FormatFloat(g.plane.Direction*180.0/pi, 'f', 1, 64)
 	ebitenutil.DebugPrintAt(screen, strings.Join([]string{"X is ", s}, ""), 0, 15)
 	ebitenutil.DebugPrintAt(screen, strings.Join([]string{"Y is ", t}, ""), 0, 30)
 	ebitenutil.DebugPrintAt(screen, strings.Join([]string{"D is ", u}, ""), 0, 45)
@@ -145,6 +176,15 @@ func (g *Game) DrawBullets(screen *ebiten.Image) {
 			screen.DrawImage(bulletImg, op)
 		}
 	}
+}
+
+func (g *Game) DrawEnemy(screen *ebiten.Image) {
+  op :=&ebiten.DrawImageOptions{}
+  op.GeoM.Translate(g.enemy.X, g.enemy.Y)
+  screen.DrawImage(enemyImg, op)
+}
+func (g *Game) DrawUI(screen *ebiten.Image) {
+	text.Draw(screen, "LIFE", arcadeFont, 10, screenY-10, color.White)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

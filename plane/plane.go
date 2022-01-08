@@ -1,17 +1,18 @@
-package player
+package plane
 
 import (
 	// "fmt"
 	"math"
 )
 
-type Player struct {
+type Plane struct {
 	// Size
 	X         float64 // X posiiton of player
 	Y         float64 // Y position of player
 	Direction float64 // Direction of player
 	r         float64 // Distance between center and lefttop of img
 	thetaP    float64 // Angle of vector between center and lefttop of img
+	Life      int
 	// Mobility
 	speed     float64 // speed of player
 	accel     float64 // accel magnitude of player
@@ -22,7 +23,7 @@ type Player struct {
 }
 
 //Initialise player parameters
-func (p *Player) NewPlayer(px, py, sx, sy int,
+func (p *Plane) NewPlayer(px, py, sx, sy int,
 	speed, accel, brake, rot_speed float64, interval int) {
 	p.X = float64(sx)/2 - float64(px)/2
 	p.Y = float64(sy)/2 - float64(py)/2
@@ -32,15 +33,20 @@ func (p *Player) NewPlayer(px, py, sx, sy int,
 	p.accel = accel
 	p.brake = brake
 	p.rot_speed = rot_speed
-  p.Gun_interval = interval
+	p.Gun_interval = interval
 }
 
-func (p *Player) Move(keys [4]bool, sx, sy int) {
+func (p *Plane) MovePlayer(keys [4]bool, sx, sy int) {
 	p.rotateCenter(keys)
 	p.translate(keys, sx, sy)
 }
 
-func (p *Player) translate(keys [4]bool, sx, sy int) {
+func (p *Plane) MoveEnemy(sx, sy int) {
+  p.Y = p.Y - p.speed*p.brake
+  p.checkScreenEdge(sx, sy)
+}
+
+func (p *Plane) translate(keys [4]bool, sx, sy int) {
 	var m float64
 	if keys[0] == true {
 		m = p.accel
@@ -63,7 +69,7 @@ func (p *Player) translate(keys [4]bool, sx, sy int) {
 }
 
 // Update angle for rotation
-func (p *Player) rotate(keys [4]bool) {
+func (p *Plane) rotate(keys [4]bool) {
 	if keys[1] { //KeyA
 		p.Direction = p.Direction - p.rot_speed
 	}
@@ -73,7 +79,7 @@ func (p *Player) rotate(keys [4]bool) {
 }
 
 // Rotate plater around the center of img
-func (p *Player) rotateCenter(keys [4]bool) {
+func (p *Plane) rotateCenter(keys [4]bool) {
 	xc1, yc1 := p.getCenter()
 	p.rotate(keys)
 	xc2, yc2 := p.getCenter()
@@ -82,7 +88,7 @@ func (p *Player) rotateCenter(keys [4]bool) {
 }
 
 // Detece edge of screen and move to the opposite side
-func (p *Player) checkScreenEdge(sx, sy int) {
+func (p *Plane) checkScreenEdge(sx, sy int) {
 	if p.X < 0 {
 		p.X = p.X + float64(sx)
 	}
@@ -98,12 +104,12 @@ func (p *Player) checkScreenEdge(sx, sy int) {
 }
 
 //Get center position of player img
-func (p *Player) getCenter() (xc, yc float64) {
+func (p *Plane) getCenter() (xc, yc float64) {
 	xc = p.X + p.r*math.Cos(p.Direction+p.thetaP)
 	yc = p.X + p.r*math.Sin(p.Direction+p.thetaP)
 	return
 }
 
-func (p *Player) CountdownInterval() {
-  p.Gun_interval = p.Gun_interval - 1
+func (p *Plane) CountdownInterval() {
+	p.Gun_interval = p.Gun_interval - 1
 }
